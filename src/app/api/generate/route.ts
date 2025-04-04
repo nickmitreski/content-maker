@@ -101,7 +101,9 @@ export async function POST(req: Request) {
     if (typeof output === 'string') {
       contentUrl = output;
     } else if (typeof output === 'object') {
-      contentUrl = (output as any).url || (output as any).output || JSON.stringify(output);
+      contentUrl = (output as { url?: string; output?: string }).url || 
+                   (output as { url?: string; output?: string }).output || 
+                   JSON.stringify(output);
     }
     
     if (!contentUrl) {

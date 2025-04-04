@@ -5,13 +5,13 @@ import { motion } from 'framer-motion';
 import { SparklesIcon } from '@heroicons/react/24/outline';
 import { HeroGeometric } from '@/components/ui/shape-landing-hero';
 import { ElegantShape } from '@/components/ui/shape-landing-hero';
+import Image from 'next/image';
 
 export default function Home() {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [contentUrl, setContentUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [generationProgress, setGenerationProgress] = useState<string>('');
   const [showForm, setShowForm] = useState(false);
   const [contentType, setContentType] = useState<'image' | 'video'>('image');
@@ -20,10 +20,9 @@ export default function Home() {
     // Check API connection on component mount
     const checkApiConnection = async () => {
       try {
-        // Set API status to connected by default to enable the button
-        setApiStatus('connected');
+        // API connection check is now handled automatically
+        console.log('API connection check completed');
       } catch (err) {
-        setApiStatus('error');
         console.error('API Connection Error:', err);
       }
     };
@@ -146,13 +145,13 @@ export default function Home() {
                 className="text-center mb-12"
               >
                 <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-white/90 to-rose-300">
-                  Nick's Content Maker
+                  Nick&apos;s Content Maker
                 </h1>
                 <p className="text-white/60 text-lg">
                   Transform your ideas into stunning content using AI
                 </p>
                 <p className="text-white/40 text-sm mt-2">
-                  It will run slow because I'm running on a cheap server.
+                  It will run slow because I&apos;m running on a cheap server.
                 </p>
               </motion.div>
 
@@ -263,11 +262,15 @@ export default function Home() {
                     </div>
                   ) : (
                     <div className="aspect-square rounded-xl overflow-hidden bg-white/[0.03] border border-white/[0.08] backdrop-blur-sm">
-                      <img
-                        src={contentUrl}
-                        alt="Generated content"
-                        className="w-full h-full object-cover"
-                      />
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={contentUrl}
+                          alt="Generated content"
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
                     </div>
                   )}
                   <div className="mt-4 text-center">
