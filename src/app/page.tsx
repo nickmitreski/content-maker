@@ -1,103 +1,301 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { SparklesIcon } from '@heroicons/react/24/outline';
+import { HeroGeometric } from '@/components/ui/shape-landing-hero';
+import { ElegantShape } from '@/components/ui/shape-landing-hero';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [prompt, setPrompt] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [contentUrl, setContentUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+  const [generationProgress, setGenerationProgress] = useState<string>('');
+  const [showForm, setShowForm] = useState(false);
+  const [contentType, setContentType] = useState<'image' | 'video'>('image');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    // Check API connection on component mount
+    const checkApiConnection = async () => {
+      try {
+        // Set API status to connected by default to enable the button
+        setApiStatus('connected');
+      } catch (err) {
+        setApiStatus('error');
+        console.error('API Connection Error:', err);
+      }
+    };
+
+    checkApiConnection();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setContentUrl(null);
+    setGenerationProgress(`Initializing ${contentType} generation...`);
+
+    try {
+      console.log('Sending prompt:', prompt);
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt, type: contentType }),
+      });
+
+      const data = await response.json();
+      console.log('Received response:', data);
+
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to generate ${contentType}`);
+      }
+
+      if (!data.output) {
+        throw new Error(`No ${contentType} URL received from the API`);
+      }
+
+      setGenerationProgress(`${contentType} generated successfully!`);
+      console.log('Setting content URL:', data.output);
+      setContentUrl(data.output);
+    } catch (err) {
+      console.error('Error in handleSubmit:', err);
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-black text-white">
+      {!showForm ? (
+        <div className="relative">
+          <HeroGeometric />
+          <div className="absolute bottom-10 left-0 right-0 flex justify-center z-20">
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.5 }}
+              onClick={() => setShowForm(true)}
+              className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full font-medium hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-purple-500/20"
+            >
+              Start Creating Content
+            </motion.button>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      ) : (
+        <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#030303]">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.05] via-transparent to-rose-500/[0.05] blur-3xl" />
+
+          <div className="absolute inset-0 overflow-hidden">
+            <ElegantShape
+              delay={0.3}
+              width={600}
+              height={140}
+              rotate={12}
+              gradient="from-indigo-500/[0.15]"
+              className="left-[-10%] md:left-[-5%] top-[15%] md:top-[20%]"
+            />
+
+            <ElegantShape
+              delay={0.5}
+              width={500}
+              height={120}
+              rotate={-15}
+              gradient="from-rose-500/[0.15]"
+              className="right-[-5%] md:right-[0%] top-[70%] md:top-[75%]"
+            />
+
+            <ElegantShape
+              delay={0.4}
+              width={300}
+              height={80}
+              rotate={-8}
+              gradient="from-violet-500/[0.15]"
+              className="left-[5%] md:left-[10%] bottom-[5%] md:bottom-[10%]"
+            />
+
+            <ElegantShape
+              delay={0.6}
+              width={200}
+              height={60}
+              rotate={20}
+              gradient="from-amber-500/[0.15]"
+              className="right-[15%] md:right-[20%] top-[10%] md:top-[15%]"
+            />
+
+            <ElegantShape
+              delay={0.7}
+              width={150}
+              height={40}
+              rotate={-25}
+              gradient="from-cyan-500/[0.15]"
+              className="left-[20%] md:left-[25%] top-[5%] md:top-[10%]"
+            />
+          </div>
+
+          <div className="relative z-10 container mx-auto px-4 md:px-6 py-12">
+            <div className="max-w-3xl mx-auto">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center mb-12"
+              >
+                <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-white/90 to-rose-300">
+                  Nick's Content Maker
+                </h1>
+                <p className="text-white/60 text-lg">
+                  Transform your ideas into stunning content using AI
+                </p>
+                <p className="text-white/40 text-sm mt-2">
+                  It will run slow because I'm running on a cheap server.
+                </p>
+              </motion.div>
+
+              <motion.form
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                onSubmit={handleSubmit}
+                className="space-y-6"
+              >
+                <div className="flex justify-center mb-4">
+                  <div className="inline-flex rounded-lg bg-white/[0.03] p-1 border border-white/[0.08]">
+                    <button
+                      type="button"
+                      onClick={() => setContentType('image')}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        contentType === 'image'
+                          ? 'bg-gradient-to-r from-indigo-500 to-rose-500 text-white'
+                          : 'text-white/60 hover:text-white'
+                      }`}
+                    >
+                      Image Generation
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setContentType('video')}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        contentType === 'video'
+                          ? 'bg-gradient-to-r from-indigo-500 to-rose-500 text-white'
+                          : 'text-white/60 hover:text-white'
+                      }`}
+                    >
+                      Video Generation
+                    </button>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder={`Describe your ${contentType}... (e.g., 'a dog riding a skateboard down a hill')`}
+                    className="w-full h-32 p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none text-white placeholder-white/40 backdrop-blur-sm"
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading || !prompt.trim()}
+                    className={`absolute right-4 bottom-4 px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                      loading || !prompt.trim()
+                        ? 'bg-white/[0.05] cursor-not-allowed'
+                        : 'bg-gradient-to-r from-indigo-500 to-rose-500 hover:from-indigo-600 hover:to-rose-600'
+                    }`}
+                  >
+                    {loading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Generating...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <SparklesIcon className="w-5 h-5" />
+                        <span>Generate {contentType === 'image' ? 'Image' : 'Video'}</span>
+                      </div>
+                    )}
+                  </button>
+                </div>
+              </motion.form>
+
+              {loading && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-6 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 backdrop-blur-sm"
+                >
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                    <span>{generationProgress}</span>
+                  </div>
+                </motion.div>
+              )}
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-300 backdrop-blur-sm"
+                >
+                  {error}
+                </motion.div>
+              )}
+
+              {contentUrl && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-8"
+                >
+                  {contentType === 'video' ? (
+                    <div className="aspect-video rounded-xl overflow-hidden bg-white/[0.03] border border-white/[0.08] backdrop-blur-sm">
+                      <video
+                        src={contentUrl}
+                        controls
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        loop
+                        muted
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-square rounded-xl overflow-hidden bg-white/[0.03] border border-white/[0.08] backdrop-blur-sm">
+                      <img
+                        src={contentUrl}
+                        alt="Generated content"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="mt-4 text-center">
+                    <a
+                      href={contentUrl}
+                      download={`generated-${contentType}.${contentType === 'video' ? 'mp4' : 'webp'}`}
+                      className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 hover:bg-indigo-500/20 transition-colors backdrop-blur-sm"
+                    >
+                      <span>Download {contentType === 'image' ? 'Image' : 'Video'}</span>
+                    </a>
+                  </div>
+                </motion.div>
+              )}
+              
+              <div className="mt-8 text-center">
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="text-white/60 hover:text-white transition-colors"
+                >
+                  ← Back to Home
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="absolute inset-0 bg-gradient-to-t from-[#030303] via-transparent to-[#030303]/80 pointer-events-none" />
+        </div>
+      )}
+    </main>
   );
 }
