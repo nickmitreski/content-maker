@@ -1,4 +1,13 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nick's Content Maker
+
+A Next.js application that allows users to generate AI-powered images and videos using Replicate's API.
+
+## Features
+
+- **Image Generation**: Create stunning images using the Flux 1.1 Pro model
+- **Video Generation**: Generate short videos using the WAN 2.1 model
+- **Toggle Between Modes**: Easily switch between image and video generation
+- **Modern UI**: Beautiful, responsive interface with animations
 
 ## Getting Started
 
@@ -16,9 +25,17 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create a `.env.local` file in the root directory with the following:
+
+```
+REPLICATE_API_TOKEN=your_replicate_api_token
+```
+
+## Deployment
+
+This project can be easily deployed to [Vercel](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme).
 
 ## Learn More
 
