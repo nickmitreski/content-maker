@@ -6,15 +6,27 @@ import { SparklesIcon } from '@heroicons/react/24/outline';
 import { HeroGeometric } from '@/components/ui/shape-landing-hero';
 import { ElegantShape } from '@/components/ui/shape-landing-hero';
 import Image from 'next/image';
+import { ImageUpscaler } from "@/components/ui/image-upscaler";
+import { CharacterGenerator } from "@/components/ui/character-generator";
 
 export default function Home() {
-  const [prompt, setPrompt] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [contentUrl, setContentUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [generationProgress, setGenerationProgress] = useState<string>('');
+  // Image Generation State
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [imageProgress, setImageProgress] = useState<string>('');
+
+  // Video Generation State
+  const [videoPrompt, setVideoPrompt] = useState('');
+  const [videoLoading, setVideoLoading] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [videoProgress, setVideoProgress] = useState<string>('');
+
+  // Navigation State
   const [showForm, setShowForm] = useState(false);
-  const [contentType, setContentType] = useState<'image' | 'video'>('image');
+  const [activeTab, setActiveTab] = useState<'image' | 'video' | 'upscale' | 'instagram' | 'character'>('image');
 
   useEffect(() => {
     // Check API connection on component mount
@@ -30,59 +42,97 @@ export default function Home() {
     checkApiConnection();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleImageSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setContentUrl(null);
-    setGenerationProgress(`Initializing ${contentType} generation...`);
+    setImageLoading(true);
+    setImageError(null);
+    setImageUrl(null);
+    setImageProgress('Initializing image generation...');
 
     try {
-      console.log('Sending prompt:', prompt);
+      console.log('Sending image prompt:', imagePrompt);
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt, type: contentType }),
+        body: JSON.stringify({ prompt: imagePrompt, type: 'image' }),
       });
 
       const data = await response.json();
-      console.log('Received response:', data);
+      console.log('Received image response:', data);
 
       if (!response.ok) {
-        throw new Error(data.error || `Failed to generate ${contentType}`);
+        throw new Error(data.error || 'Failed to generate image');
       }
 
       if (!data.output) {
-        throw new Error(`No ${contentType} URL received from the API`);
+        throw new Error('No image URL received from the API');
       }
 
-      setGenerationProgress(`${contentType} generated successfully!`);
-      console.log('Setting content URL:', data.output);
-      setContentUrl(data.output);
+      setImageProgress('Image generated successfully!');
+      console.log('Setting image URL:', data.output);
+      setImageUrl(data.output);
     } catch (err) {
-      console.error('Error in handleSubmit:', err);
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      console.error('Error in handleImageSubmit:', err);
+      setImageError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
-      setLoading(false);
+      setImageLoading(false);
+    }
+  };
+
+  const handleVideoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVideoLoading(true);
+    setVideoError(null);
+    setVideoUrl(null);
+    setVideoProgress('Initializing video generation...');
+
+    try {
+      console.log('Sending video prompt:', videoPrompt);
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: videoPrompt, type: 'video' }),
+      });
+
+      const data = await response.json();
+      console.log('Received video response:', data);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate video');
+      }
+
+      if (!data.output) {
+        throw new Error('No video URL received from the API');
+      }
+
+      setVideoProgress('Video generated successfully!');
+      console.log('Setting video URL:', data.output);
+      setVideoUrl(data.output);
+    } catch (err) {
+      console.error('Error in handleVideoSubmit:', err);
+      setVideoError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setVideoLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-[#030303]">
       {!showForm ? (
         <div className="relative">
           <HeroGeometric />
-          <div className="absolute bottom-10 left-0 right-0 flex justify-center z-20">
+          <div className="absolute bottom-10 left-0 right-0 z-20 flex justify-center">
             <motion.button
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.5 }}
               onClick={() => setShowForm(true)}
-              className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full font-medium hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-purple-500/20"
+              className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/10 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              Start Creating Content
+              Continue to Content Creation
             </motion.button>
           </div>
         </div>
@@ -155,133 +205,213 @@ export default function Home() {
                 </p>
               </motion.div>
 
-              <motion.form
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                onSubmit={handleSubmit}
-                className="space-y-6"
-              >
-                <div className="flex justify-center mb-4">
-                  <div className="inline-flex rounded-lg bg-white/[0.03] p-1 border border-white/[0.08]">
-                    <button
-                      type="button"
-                      onClick={() => setContentType('image')}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        contentType === 'image'
-                          ? 'bg-gradient-to-r from-indigo-500 to-rose-500 text-white'
-                          : 'text-white/60 hover:text-white'
-                      }`}
-                    >
-                      Image Generation
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setContentType('video')}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                        contentType === 'video'
-                          ? 'bg-gradient-to-r from-indigo-500 to-rose-500 text-white'
-                          : 'text-white/60 hover:text-white'
-                      }`}
-                    >
-                      Video Generation
-                    </button>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder={`Describe your ${contentType}... (e.g., 'a dog riding a skateboard down a hill')`}
-                    className="w-full h-32 p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none text-white placeholder-white/40 backdrop-blur-sm"
-                  />
+              <div className="flex justify-center mb-8">
+                <div className="inline-flex rounded-lg bg-white/[0.03] p-1 border border-white/[0.08]">
                   <button
-                    type="submit"
-                    disabled={loading || !prompt.trim()}
-                    className={`absolute right-4 bottom-4 px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                      loading || !prompt.trim()
-                        ? 'bg-white/[0.05] cursor-not-allowed'
-                        : 'bg-gradient-to-r from-indigo-500 to-rose-500 hover:from-indigo-600 hover:to-rose-600'
+                    type="button"
+                    onClick={() => setActiveTab('image')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === 'image'
+                        ? 'bg-gradient-to-r from-indigo-500 to-rose-500 text-white'
+                        : 'text-white/60 hover:text-white'
                     }`}
                   >
-                    {loading ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Generating...</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center space-x-2">
-                        <SparklesIcon className="w-5 h-5" />
-                        <span>Generate {contentType === 'image' ? 'Image' : 'Video'}</span>
-                      </div>
-                    )}
+                    Image Generation
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('video')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === 'video'
+                        ? 'bg-gradient-to-r from-indigo-500 to-rose-500 text-white'
+                        : 'text-white/60 hover:text-white'
+                    }`}
+                  >
+                    Video Generation
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('upscale')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === 'upscale'
+                        ? 'bg-gradient-to-r from-indigo-500 to-rose-500 text-white'
+                        : 'text-white/60 hover:text-white'
+                    }`}
+                  >
+                    Image Upscaling
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('instagram')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === 'instagram'
+                        ? 'bg-gradient-to-r from-indigo-500 to-rose-500 text-white'
+                        : 'text-white/60 hover:text-white'
+                    }`}
+                  >
+                    Instagram Analyzer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('character')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === 'character'
+                        ? 'bg-gradient-to-r from-indigo-500 to-rose-500 text-white'
+                        : 'text-white/60 hover:text-white'
+                    }`}
+                  >
+                    Character Generator
                   </button>
                 </div>
-              </motion.form>
+              </div>
 
-              {loading && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mt-6 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 backdrop-blur-sm"
-                >
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-                    <span>{generationProgress}</span>
-                  </div>
-                </motion.div>
-              )}
-
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mt-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-300 backdrop-blur-sm"
-                >
-                  {error}
-                </motion.div>
-              )}
-
-              {contentUrl && (
+              {/* Image Generation Tab */}
+              {activeTab === 'image' && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-8"
+                  transition={{ delay: 0.2 }}
+                  className="space-y-6"
                 >
-                  {contentType === 'video' ? (
-                    <div className="aspect-video rounded-xl overflow-hidden bg-white/[0.03] border border-white/[0.08] backdrop-blur-sm">
-                      <video
-                        src={contentUrl}
-                        controls
-                        className="w-full h-full object-cover"
-                        autoPlay
-                        loop
-                        muted
-                      />
-                    </div>
-                  ) : (
-                    <div className="aspect-square rounded-xl overflow-hidden bg-white/[0.03] border border-white/[0.08] backdrop-blur-sm">
-                      <div className="relative w-full h-full">
-                        <Image
-                          src={contentUrl}
-                          alt="Generated content"
-                          fill
-                          className="object-cover"
-                          unoptimized
+                  <div className="bg-white/5 backdrop-blur-sm rounded-lg p-6 border border-white/10">
+                    <h2 className="text-2xl font-bold mb-6 text-white">Image Generation</h2>
+                    <form onSubmit={handleImageSubmit} className="space-y-6">
+                      <div className="relative">
+                        <textarea
+                          value={imagePrompt}
+                          onChange={(e) => setImagePrompt(e.target.value)}
+                          placeholder="Describe the image you want to create... (e.g., 'a dog riding a skateboard down a hill')"
+                          className="w-full h-32 p-4 rounded-xl bg-black/50 border border-white/[0.08] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none text-white placeholder-white/40 backdrop-blur-sm"
                         />
+                        <button
+                          type="submit"
+                          disabled={imageLoading || !imagePrompt.trim()}
+                          className={`absolute right-4 bottom-4 px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                            imageLoading || !imagePrompt.trim()
+                              ? 'bg-white/[0.05] cursor-not-allowed'
+                              : 'bg-gradient-to-r from-indigo-500 to-rose-500 hover:from-indigo-600 hover:to-rose-600'
+                          }`}
+                        >
+                          {imageLoading ? (
+                            <div className="flex items-center space-x-2">
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              <span>Generating...</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-2">
+                              <SparklesIcon className="w-5 h-5" />
+                              <span>Generate Image</span>
+                            </div>
+                          )}
+                        </button>
                       </div>
-                    </div>
-                  )}
-                  <div className="mt-4 text-center">
-                    <a
-                      href={contentUrl}
-                      download={`generated-${contentType}.${contentType === 'video' ? 'mp4' : 'webp'}`}
-                      className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 hover:bg-indigo-500/20 transition-colors backdrop-blur-sm"
-                    >
-                      <span>Download {contentType === 'image' ? 'Image' : 'Video'}</span>
-                    </a>
+                    </form>
+
+                    {imageLoading && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="mt-6 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 backdrop-blur-sm"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                          <span>{imageProgress}</span>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {imageError && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="mt-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-300 backdrop-blur-sm"
+                      >
+                        {imageError}
+                      </motion.div>
+                    )}
+
+                    {imageUrl && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-8"
+                      >
+                        <div className="aspect-square rounded-xl overflow-hidden bg-white/[0.03] border border-white/[0.08] backdrop-blur-sm">
+                          <div className="relative w-full h-full">
+                            <Image
+                              src={imageUrl}
+                              alt="Generated image"
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-4 text-center">
+                          <a
+                            href={imageUrl}
+                            download="generated-image.webp"
+                            className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-300 hover:bg-indigo-500/20 transition-colors backdrop-blur-sm"
+                          >
+                            <span>Download Image</span>
+                          </a>
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
+                </motion.div>
+              )}
+
+              {/* Video Generation Tab */}
+              {activeTab === 'video' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-white/[0.03] rounded-lg p-6 border border-white/[0.08] text-center"
+                >
+                  <h2 className="text-2xl font-bold mb-4 text-white/90">Video Generation</h2>
+                  <p className="text-white/60 mb-4">This feature is currently under construction.</p>
+                  <p className="text-white/40 text-sm">We're working on implementing video generation capabilities. Check back soon!</p>
+                </motion.div>
+              )}
+
+              {/* Image Upscaling Tab */}
+              {activeTab === 'upscale' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <div className="bg-white/5 backdrop-blur-sm rounded-lg p-6 border border-white/10">
+                    <h2 className="text-2xl font-bold mb-6 text-white">Image Upscaling</h2>
+                    <ImageUpscaler />
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Instagram Analyzer Tab */}
+              {activeTab === 'instagram' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-white/[0.03] rounded-lg p-6 border border-white/[0.08] text-center"
+                >
+                  <h2 className="text-2xl font-bold mb-4 text-white/90">Instagram Analyzer</h2>
+                  <p className="text-white/60 mb-4">This feature is currently under construction.</p>
+                  <p className="text-white/40 text-sm">We're working on implementing real Instagram data analysis. Check back soon!</p>
+                </motion.div>
+              )}
+
+              {/* Character Generator Tab */}
+              {activeTab === 'character' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <CharacterGenerator />
                 </motion.div>
               )}
               
